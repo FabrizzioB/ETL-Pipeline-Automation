@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  airflow:
+    build: ./airflow
+    container_name: apache_airflow
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    ports:
+      - "8069:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    command: ["airflow", "standalone"]
+    networks:
+      - airflow_network  # Referencing the custom network
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - airflow_network  # Referencing the same custom network
+
+networks:
+  airflow_network:
+    driver: bridge  # Specify the network driver (default is bridge)
+    # You can specify subnets if needed, e.g.,
+    ipam:
+      config:
+        - subnet: 192.168.56.0/24
+
+volumes:
+  postgres_data:
